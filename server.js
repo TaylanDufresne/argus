@@ -1,56 +1,34 @@
 const port = process.env.PORT || 3010;
 const fs = require("fs")
+const sqlite3 = require('sqlite3').verbose();
 
 
 const express = require('express')
 const app = express()
 
-const sample_tasks = [
-    { id: 0,
-      data: {task: "test_interval",
-	     url: "google.ca",
-	     start: 2000,
-	     repeat:5000
-	    }
-      
-    },
-    { id: 1,
-      data: {task: "test_interval",
-	     url: "github.com",
-	     start: 1000,
-	     repeat:3000
-	    }
-      
-    },
-    { id: 2,
-      data: {task: "make_hash",
-	     url: "https://google.ca",
-	     start: 1000,
-	     repeat:3000
-	    }
-      
-    },
-    { id: 3,
-      data: {task: "gibberish",
-	     url: "github.com",
-	     start: 1000,
-	     repeat:3000
-	    }
-      
-    },
-    
-    { id: 4,
-      data: {task: "weather",
-	     location: "Saskatoon",
-	     start: 9000,
-	     repeat:10000
-	    }
-      
+const db = new sqlite3.Database('argus.db', (err) => {
+    if (err) {
+	console.error(err.message);
     }
-]
+    console.log('Connected to the database.');
+});
+
+var eyes = 0
+
+db.all("SELECT * FROM tasks", [], (err, rows) => {
+    if (err) {
+	console.error(err.message);
+    }
+    eyes = rows.length
+    rows.forEach((row) => {
+	row.data = JSON.parse(row.data)
+	console.log(row);
+	determine_task(row)
+    });
+});
 
 
-sample_tasks.forEach(item => {
+function determine_task(item){
     switch (item.data.task){
     case "test_interval":
 	perform_periodically(item, print_id)
@@ -66,19 +44,36 @@ sample_tasks.forEach(item => {
 	break
     default:
     }
-})
+}
 
 function print_id(item){
     console.log(item.id)
 }
 
 function perform_periodically(item, func){
+    const currentTime = Date.now()
+    const repeat = item.repeat
+    let startTime
+
+    if (item.start < currentTime){
+	// If we're already passed the start time, calculate the next
+	// incrementing time
+	startTime = (currentTime - item.start) % repeat 
+    }
+    else{
+	// Otherwise, calculate the wait to the start time
+	startTime = item.start - currentTime
+    }
+    console.log(startTime)
+
+    // Use a timeout so we start the interval at the correct time
+    // Then the interval manages itself
 	setTimeout(item => {
-	    console.log(item)  
+	    func(item)
 	    setInterval(x => {
 		func(x)
-	    }, item.data.repeat, item)
-	},item.data.start, item)
+	    }, item.repeat, item)
+	},startTime, item)
 }
 
 function make_hash(url){
@@ -136,4 +131,7 @@ function parse_weather(weather, day){
 
 
 app.listen(port)
-console.log(`Argus opening ${sample_tasks.length} eyes on port: ${port}`)
+setTimeout(() => {
+
+console.log(`Argus opening ${eyes} eyes on port: ${port}`)
+},200)
