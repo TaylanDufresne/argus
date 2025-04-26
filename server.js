@@ -1,10 +1,13 @@
 const port = process.env.PORT || 3010;
 const fs = require("fs")
 const sqlite3 = require('sqlite3').verbose();
+const ejs = require('ejs')
 
 
 const express = require('express')
 const app = express()
+
+app.set('view engine', 'ejs');
 
 const db = new sqlite3.Database('argus.db', (err) => {
     if (err) {
@@ -129,6 +132,18 @@ function parse_weather(weather, day){
     }
 }
 
+
+app.get("/dashboard", (req,res) => {
+    console.log("visitor")
+    db.all("SELECT * FROM tasks", (err, rows) => {
+	rows.map(row => {
+	    return row.data = JSON.parse(row.data)
+	})
+	console.log(rows)
+	// row.data = JSON.parse(row.data)
+	res.render("dashboard", { tasks : rows});
+    })
+})
 
 app.listen(port)
 setTimeout(() => {

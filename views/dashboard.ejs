@@ -1,0 +1,8 @@
+<h2>Tasks</h2>
+<a href="/add">Add New</a>
+<ul>
+  <% tasks.forEach(task => { %>
+    <li><%= task.data.task %> — <%= task.start %></li>
+  <% }) %>
+</ul>
+
