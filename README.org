@@ -4,4 +4,4 @@
 Argus is used for building automated agents online. I use it for watching for
 events, monitoring pages, and performing simple web tasks. It's similar to
 IFTTT, Zapier, or Huginn - but built with Javascript and Node both as a learning exercise
-and because I don't grok Ruby.
+and because it's easier for me to hack on (I don't grok Ruby).
