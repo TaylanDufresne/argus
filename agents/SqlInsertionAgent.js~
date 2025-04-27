@@ -3,29 +3,28 @@ const Agent = require("./Agent.js")
 
 class WeatherAgent extends Agent {
 
-	constructor(location, id, offset, begin, repeat, downstreamAgent = null) {
-		super(`WeatherAgent-${location}`, id, begin, repeat)
+	constructor(location, id, offset, begin, repeat, downstream_agent = null) {
+	    super(`WeatherAgent-${location}`, id, begin, repeat, downstream_agent)
 		this.location = location
 		this.offset = offset
-		this.downstreamAgent = downstreamAgent
 	}
 
 	async run() {
-	    // console.log(`Weather-Agent-${location} requesting and sending`) 
-	    if (!this.downstreamAgent){
-		return this.get_weather()
-			.then(weather => {
-			    return this.parse_weather(weather, this.calculate_day())
-		})
-	    }
-	    else{
-			this.downstreamAgent.downstream(
-				this.get_weather()
-					.then(weather => {
-						return this.parse_weather(weather, this.calculate_day())
-					}))
-	    }
+		// console.log(`Weather-Agent-${location} requesting and sending`) 
+		if (!this.downstream_agent) {
+			return this.get_weather()
+				.then(weather => {
+					return this.parse_weather(weather, this.calculate_day())
+				})
+		}
+		else {
+			this.send_downstream(this.get_weather()
+				.then(weather => {
+					return this.parse_weather(weather, this.calculate_day())
+				}))
+		}
 	}
+
 
 	get_weather() {
 		return fetch(`https://wttr.in/${this.location}?format=j1`)

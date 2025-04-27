@@ -7,9 +7,9 @@ const ejs = require('ejs')
 const express = require('express')
 const app = express()
 
-const WeatherAgent = require("./WeatherAgent.js")
-const LoggingAgent = require("./LoggingAgent.js")
-const Agent = require("./Agent.js")
+const WeatherAgent = require("./agents/WeatherAgent.js")
+const LoggingAgent = require("./agents/LoggingAgent.js")
+const SqlInsertionAgent = require("./agents/SqlInsertionAgent.js")
 
 
 
@@ -37,12 +37,15 @@ db.all("SELECT * FROM tasks", [], (err, rows) => {
 	});
 });
 
+db.close()
 
 const logger = new LoggingAgent(0, null)
+const inserter = new SqlInsertionAgent("argus.db", "testing_temp", false, 1)
+const inserter2 = new SqlInsertionAgent("argus.db", "testing_temp", true, 1)
 
 const agent = new WeatherAgent("Saskatoon", 0, 0, 6000, 6000, logger)
-const agent1 = new WeatherAgent("Regina", 0, 0, 6000, 6000, logger)
-const agent2 = new WeatherAgent("Saskatoon", 0, 0, 6000, 6000, logger)
+const agent1 = new WeatherAgent("Regina", 0, 0, 6000, 6000, inserter2)
+const agent2 = new WeatherAgent("Saskatoon", 0, 0, 6000, 6000, inserter)
 agent.start()
 agent1.start()
 agent2.start()

@@ -1,12 +1,13 @@
 
 class Agent {
-    constructor(name, id, begin = Date.now(), repeat = 3600000){
+    constructor(name, id, begin = Date.now(), repeat = 3600000, downstream_agent = null){
 	this.name = name;
 	this.id = id;
 	this.repeat = repeat
 	this.begin = begin
 	this.repeatId = null;
 	this.isRunning = false;
+	this.downstream_agent = downstream_agent
     }
 
     start() {
@@ -64,12 +65,30 @@ class Agent {
 	return id;
     }
 
+
+    // Methods to overrided
+    describe(){
+
+	return `This is boilerplate text from the Agent class. This should be
+                overridden with a description of the Agent that extends this class`
+    }
+
     async run() {
 	console.warn(`Agent [${this.name}: ${this.id}] run() method not implemented.`);
     }
 
-    async downstream(){
-	console.warn(`Agent [${this.name}: ${this.id}] downstream() method not implemented.`);
+    async receive(data){
+	console.warn(`Agent [${this.name}: ${this.id}] receive() method not implemented.`);
+    }
+    
+    async send_downstream(data){
+
+	if(!this.downstream_agent){
+	    console.warn(`Agent [${this.name}: ${this.id}] does not have a downstream agent.`);
+	    return
+	}
+	this.downstream_agent.receive(data)
+	
     }
 
 

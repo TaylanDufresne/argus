@@ -13,7 +13,7 @@ class LoggingAgent extends Agent {
 	    }
 	}
 
-    async downstream(data){
+    async receive(data){
 	this.data.push(await data)
 	this.run()
     }
