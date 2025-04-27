@@ -3,14 +3,13 @@ const Agent = require("./Agent.js")
 
 class WeatherAgent extends Agent {
 
-    constructor(location, id, offset, begin, repeat, downstream_agent = null) {
-	super(`WeatherAgent-${location}`, id, begin, repeat, downstream_agent)
-	this.location = location
-	this.offset = offset
+    constructor(props, id, begin, repeat) {
+	super(`WeatherAgent-${props.location}`, id, begin, repeat)
+	this.location = props.location
+	this.offset = props.offset
     }
 
     async run() {
-	// console.log(`Weather-Agent-${location} requesting and sending`) 
 	if (!this.downstream_agent) {
 	    return this.get_weather()
 		.then(weather => {

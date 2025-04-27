@@ -12,6 +12,11 @@ const LoggingAgent = require("./agents/LoggingAgent.js")
 const SqlInsertionAgent = require("./agents/SqlInsertionAgent.js")
 
 
+// For each agent, check if in the map
+// If they have a listed downstream agent,
+// check the map for it, if it's not there,
+// make it and put it in the map
+agent_map = {}
 
 
 app.set('view engine', 'ejs');
@@ -25,36 +30,76 @@ const db = new sqlite3.Database('argus.db', (err) => {
 
 var eyes = 0
 
-db.all("SELECT * FROM tasks", [], (err, rows) => {
+db.all("select * from tasks", [], (err, rows) => {
 	if (err) {
 		console.error(err.message);
 	}
 	eyes = rows.length
-	rows.forEach((row) => {
-		row.data = JSON.parse(row.data)
-		console.log(row);
-		determine_task(row)
-	});
+	deploy_agents(rows, db)
 });
 
 db.close()
 
-const logger = new LoggingAgent(0, null)
-const inserter = new SqlInsertionAgent("argus.db", "testing_temp", false, 1)
-const inserter2 = new SqlInsertionAgent("argus.db", "testing_temp", true, 1)
 
-const agent = new WeatherAgent("Saskatoon", 0, 0, 6000, 6000, logger)
-const agent1 = new WeatherAgent("Regina", 0, 0, 6000, 6000, inserter2)
-const agent2 = new WeatherAgent("Saskatoon", 0, 0, 6000, 6000, inserter)
-agent.start()
-agent1.start()
-agent2.start()
-// console.log(agent.start())
+function deploy_single_agent(row) {
+	let opening_eye
+	if (agent_map[row.id]) {
+		console.log("exists")
+		opening_eye = agent_map[row.id]
+	}
+	else {
+		opening_eye = determine_agent(row)
+		agent_map[row.id] = opening_eye
+	}
+	opening_eye.start()
+	return opening_eye
 
+}
+
+function deploy_agents(rows, db) {
+	rows.forEach(row => {
+		row.data = JSON.parse(row.data)
+		const opening_eye = deploy_single_agent(row)
+		const downstream_agent = row.data.downstream_agent
+		if (downstream_agent) {
+			if (agent_map[downstream_agent]) {
+				opening_eye.set_downstream_agent(agent_map[downstream_agent])
+			}
+			else {
+				// I don't have the row, this will need to be a separate request
+				db.get(`SELECT * FROM tasks WHERE id = ${downstream_agent}`, [], (err, row) => {
+					if (err) {
+						console.error(err.message);
+					}
+					row.data = JSON.parse(row.data)
+					let downstream_agent = deploy_single_agent(row)
+					opening_eye.set_downstream_agent(downstream_agent)
+				});
+			}
+		}
+	})
+}
+
+function determine_agent(item) {
+	const id = item.id
+	const data = item.data
+	const begin = item.begin
+	const repeat = item.repeat
+	switch (item.data.task) {
+		case "logger":
+			return new LoggingAgent(data, id, begin, repeat)
+		case "sql_inserter":
+			return new SqlInsertionAgent(data, id, begin, repeat)
+		case "weather":
+			return new WeatherAgent(data, id, begin, repeat)
+		default:
+	}
+
+}
 function determine_task(item) {
 	switch (item.data.task) {
 		case "test_interval":
-	    console.log(perform_periodically(item, print_id))
+			console.log(perform_periodically(item, print_id))
 			break
 		case "make_hash":
 			make_hash(item.data.url)
@@ -70,35 +115,6 @@ function determine_task(item) {
 	}
 }
 
-function print_id(item) {
-	console.log(item.id)
-}
-
-function perform_periodically(item, func) {
-	const currentTime = Date.now()
-	const repeat = item.repeat
-	let startTime
-
-	if (item.start < currentTime) {
-		// If we're already passed the start time, calculate the next
-		// incrementing time
-		startTime = (currentTime - item.start) % repeat
-	}
-	else {
-		// Otherwise, calculate the wait to the start time
-		startTime = item.start - currentTime
-	}
-	console.log(startTime)
-
-	// Use a timeout so we start the interval at the correct time
-	// Then the interval manages itself
-	return setTimeout(item => {
-		func(item)
-		return setInterval(x => {
-			func(x)
-		}, item.repeat, item)
-	}, startTime, item)
-}
 
 function make_hash(url) {
 	return fetch(url)
@@ -117,62 +133,6 @@ function make_hash(url) {
 		})
 }
 
-function calculate_day(offset) {
-
-	const date = new Date()
-	date.setDate(date.getDate() + offset)
-
-	const day = date.getDate()
-	const month = date.getMonth() + 1
-	const year = date.getFullYear()
-
-	const formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
-
-	return formattedDate
-
-}
-
-function get_weather(item) {
-	return fetch("https://wttr.in/Saskatoon?format=j1")
-		.then(response => response.json())
-		.then(data => data.weather)
-}
-
-function parse_weather(weather, day) {
-	for (let data of weather) {
-		if (data.date === day) {
-
-			let obj = {
-				"high_temp": data.maxtempC,
-				"low_temp": data.mintempC,
-				"snow": data.totalSnow_cm,
-				"sun_hours": data.sunHour
-			}
-			return obj
-		}
-	}
-}
-
-function human_readable_start(time) {
-	const date = new Date(time)
-	const hours = date.getHours();
-	const minutes = date.getMinutes();
-	return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-
-}
-
-function human_readable_repeat(time) {
-	const seconds = Math.floor(time / 1000) % 60
-	const minutes = Math.floor(time / (60 * 1000)) % 60
-	const hours = Math.floor(time / (60 * 60 * 1000)) % 24
-	const days = Math.floor(time / (24 * 60 * 60 * 1000))
-
-	const test = new Date(time)
-	console.log(test)
-	console.log(`Days: ${days}, Hours: ${hours}, Minutes: ${minutes}, Seconds: ${seconds}`)
-	return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-
-}
 
 
 app.get("/dashboard", (req, res) => {

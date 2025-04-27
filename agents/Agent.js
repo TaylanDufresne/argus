@@ -1,15 +1,19 @@
 
 class Agent {
-    constructor(name, id, begin = Date.now(), repeat = 3600000, downstream_agent = null){
+    constructor(name, id, begin = Date.now(), repeat = 3600000){
 	this.name = name;
 	this.id = id;
 	this.repeat = repeat
 	this.begin = begin
 	this.repeatId = null;
 	this.isRunning = false;
-	this.downstream_agent = downstream_agent
+	this.downstream_agent = null;
     }
 
+    set_downstream_agent(agent){
+	this.downstream_agent = agent;
+	return;
+    }
     start() {
 	if (this.isRunning) {
 	    console.log(`Agent [${this.id}: ${this.name}] is already running.`)
@@ -22,7 +26,7 @@ class Agent {
 	if(this.repeat != null){
 	    this.repeatId = this.perform_periodically()
 	}
-	else if (this.start != null{
+	else if (this.start != null) {
 	    this.run()
 	}
     }

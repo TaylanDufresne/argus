@@ -4,15 +4,16 @@ const sqlite3 = require('sqlite3').verbose();
 
 class SqlInsertionAgent extends Agent {
 
-	constructor(db_name, table_name, isTimeSeries, id, begin, repeat, downstream_agent = null) {
-		super(`${id}-SqlInsertionAgent`, id, begin, repeat, downstream_agent)
-		this.db_name = db_name
-		this.table_name = table_name
-		this.isTimeSeries = isTimeSeries
+    constructor(props, id, begin, repeat) {
+		super(`SqlInsertionAgent`, id, begin, repeat)
+		this.db_name = props.db_name
+		this.table_name = props.table_name
+		this.isTimeSeries = props.isTimeSeries
 		this.data_to_insert = []
 	}
 
 	async run() {
+	    if(!this.isRunning) return
 
 		while (this.data_to_insert.length > 0) {
 			const data = this.data_to_insert.pop()
@@ -74,6 +75,7 @@ class SqlInsertionAgent extends Agent {
 	}
 
 	async receive(data) {
+	    if(!this.isRunning) return
 		this.data_to_insert.push(data)
 		this.run()
 	}
