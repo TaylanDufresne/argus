@@ -2,7 +2,7 @@
 <a href="/add">Add New</a>
 <ul>
   <% tasks.forEach(task => { %>
-    <li><%= task.data.task %> — <%= task.start %></li>
+    <li><%= task.data.task %> — <%= task.start %> - <%=task.repeat %></li>
   <% }) %>
 </ul>
 
