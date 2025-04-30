@@ -52,7 +52,6 @@ input:focus, button:focus {
   outline: none;
   border-color: var(--blue);
 }
-/* Base Styles */
 .toggle-wrapper {
   position: relative;
   display: inline-block;
@@ -61,19 +60,16 @@ input:focus, button:focus {
   margin: auto;
 }
 
-
-/* Hide the default checkbox */
 .toggle-wrapper input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-/* The slider */
 .toggle-slider {
   position: absolute;
   cursor: pointer;
-  background-color: #504945; /* Gruvbox off color */
+  background-color: #504945; 
   border-radius: 34px;
   top: 0;
   left: 0;
@@ -82,7 +78,6 @@ input:focus, button:focus {
   transition: 0.3s;
 }
 
-/* The circle */
 .toggle-slider::before {
   position: absolute;
   content: "";
@@ -90,17 +85,15 @@ input:focus, button:focus {
   width: 18px;
   left: 4px;
   bottom: 4px;
-  background-color: #ebdbb2; /* Gruvbox light foreground */
+  background-color: #ebdbb2; 
   transition: 0.3s;
   border-radius: 50%;
 }
 
-/* Toggle On */
 .toggle-wrapper input:checked + .toggle-slider {
-  background-color: #98971a; /* Gruvbox green */
+  background-color: #98971a; 
 }
 
-/* Move the circle */
 .toggle-wrapper input:checked + .toggle-slider::before {
   transform: translateX(24px);
 }
@@ -126,7 +119,6 @@ button:hover {
   margin: 0;
 }
 
-/* table styling */
 table {
   width: 100%;
   margin: 0 auto;
@@ -168,7 +160,6 @@ tbody tr:hover {
   background-color: var(--dark2);
 }
 
-/* Action Buttons in Table */
 td form {
   display: inline;
 }
@@ -290,7 +281,6 @@ td button[type="submit"]:last-child {
   display: none;
 }
 
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;

@@ -45,11 +45,7 @@
 	  <!-- 	   required /> -->
 	  <label for="type">Agent Type:</label>
 	  <select id="agent-type"
-		  name="type" required />
-	  <!-- This will eventually be programmatically built, but do this for testing -->
-	  <option value="LoggingAgent">LoggingAgent</option>
-	  <option value="WeatherAgent">WeatherAgent</option>
-	  <option value="SqlInsertionAgent">SQLInsertionAgent</option>
+		  Name="type" required />
 </select>
     <div class="update-modal" id="updateable">
 <label>Start Time:</label>
@@ -68,7 +64,7 @@
 </select>
 </div>
 <div class="actions">
-  <button type="submit">Save</button>
+  <button type="submit">Create</button>
   <button type="button"
 	  id="cancelAdd">Cancel</button>
 </div>
@@ -289,6 +285,17 @@ document.querySelectorAll('.toggle-button').forEach(button => {
 });
 
 
+const agent_dropdown = document.getElementById("agent-type")
+fetch("/agent/config/")
+	.then(res => res.json())
+	.then(config => {
+	    Object.keys(config).forEach(agent => {
+		const option = document.createElement("option")
+		option.value = agent;
+		option.text = agent;
+		agent_dropdown.appendChild(option)
+	    })
+	})
 
 
 
