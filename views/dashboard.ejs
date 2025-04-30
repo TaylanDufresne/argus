@@ -35,7 +35,7 @@
 	<h2>Add Agent</h2>
 	<form id="addAgentForm"
 	      method="POST"
-	      action="/agents/add">
+	      action="/agents/create">
 	  <input type="hidden"
 		 name="agentId" />
 	  <!-- Will likely want to name agents and workflows eventually -->
@@ -45,23 +45,11 @@
 	  <!-- 	   required /> -->
 	  <label for="type">Agent Type:</label>
 	  <select id="agent-type"
-		  Name="type" required />
+Name="type"
+required />
+    <option value="" disabled selected hidden>Select Agent...</option>
 </select>
     <div class="update-modal" id="updateable">
-<label>Start Time:</label>
-<input type="datetime-local"
-       name="startTime" required />
-<label>Interval:</label>
-<input type="number"
-       name="interval" required />
-<label for="units">Units:</label>
-<select id="units"
-	name="units" required />
-<option value="seconds">Second(s)</option>
-<option value="minutes">Minute(s)</option>
-<option value="hours">Hour(s)</option>
-<option value="days">Day(s)</option>
-</select>
 </div>
 <div class="actions">
   <button type="submit">Create</button>
@@ -254,9 +242,24 @@ new Sortable(table_body, {
     }
 });
 
-document.querySelectorAll('.toggle-button').forEach(button => {
-    button.addEventListener('click', async () => {
+document.getElementById('agent-body').addEventListener('click', async (e) => {
+  if (e.target.classList.contains('delete-button')) {
+    const agentId = e.target.dataset.agentId;
 
+    const response = await fetch(`/agents/delete/${agentId}`, {
+      method: 'POST',
+	headers: { 'Content-Type': 'application/json' },
+    });
+
+    const result = await response.text();
+
+    if (response.ok) {
+	document.getElementById("agent-body").innerHTML = result;
+    } else {
+      alert("Error: " + result.error);
+    }
+  }
+  if (e.target.classList.contains('toggle-button')) {
 	const agentId = button.dataset.agentId;
 
 	const res = await fetch(`/agents/toggle/${agentId}`, {
@@ -281,7 +284,7 @@ document.querySelectorAll('.toggle-button').forEach(button => {
 	// Update status text
 	const statusCell = document.getElementById(`status-${data.id}`);
 	if (statusCell) statusCell.textContent = data.isRunning ? "Running" : "Stopped";
-    });
+  }
 });
 
 
@@ -296,9 +299,6 @@ fetch("/agent/config/")
 		agent_dropdown.appendChild(option)
 	    })
 	})
-
-
-
 
 // Collapse/Expand child rows
 document.querySelectorAll('.collapse-toggle').forEach(button => {
@@ -326,6 +326,35 @@ const editForm = document.getElementById('editAgentForm');
 
 const addModal = document.getElementById("addModalOverlay")
 const addForm = document.getElementById('addAgentForm');
+
+document.getElementById("addAgentForm").addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    const response = await fetch("/agents/create", {
+	method: 'POST',
+	headers: { 'Content-Type': 'application/json' },
+	body: JSON.stringify(data)	
+    })
+
+    const result = await response.text();
+
+    if (response.ok) {
+	// updateAgentList(result.agents); // custom function to update UI
+	addModal.classList.remove('show');
+	form.reset();
+	document.getElementById("agent-body").innerHTML = result;
+	
+    } else {
+	alert("Error: " + result.error);
+    }
+
+    
+
+})
 
 document.querySelectorAll('.edit-agent').forEach(button => {
     button.addEventListener('click', () => {
@@ -355,6 +384,7 @@ function updateModalFields(agent_fields){
 	    input.name = field.name;
 	    input.type = field.type;
 	    input.placeholder = field.name;
+	    input.required = true;
 
 	    const label = document.createElement('label');
 	    label.textContent = field.name;
@@ -368,6 +398,7 @@ function updateModalFields(agent_fields){
 	    input.type = field.type;
 	    input.placeholder = field.name;
 	    input.className = "toggle-checkbox"
+	    // input.required = true;
 
 	    const label = document.createElement('label');
 	    label.textContent = field.name;

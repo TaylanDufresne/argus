@@ -42,12 +42,17 @@ const hasChildren = children.length > 0;
 	      data-agent-id="<%= agent.id %>">
 	Edit
       </button>
-      <form action="/agents/delete/<%= agent.id %>"
-	    method="POST" style="display:inline;">
-        <button type="submit">
+      <!-- <form class="delete-button" -->
+      <!-- 	    action="/agents/delete/<%= agent.id %>" -->
+      <!-- 	    method="POST" -->
+      <!-- 	    style="display:inline;"> -->
+        <button class="delete-button"
+		style="display:inline"
+		data-agent-id="<%= agent.id %>"
+		type="submit">
 	  Delete
 	</button>
-      </form>
+      <!-- </form> -->
       <form action="/agents/view_data/<%= agent.id %>"
 	    method="GET"
 	    style="display:inline;">

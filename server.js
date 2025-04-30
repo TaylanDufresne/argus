@@ -130,12 +130,12 @@ function determine_agent(item) {
 	const data = item.data
 	const begin = item.begin
 	const repeat = item.repeat
-	switch (item.data.task) {
-		case "logger":
+	switch (item.data.type) {
+		case "LoggingAgent":
 			return new LoggingAgent(data, id, begin, repeat)
-		case "sql_inserter":
+		case "SqlInsertionAgent":
 			return new SqlInsertionAgent(data, id, begin, repeat)
-		case "weather":
+		case "WeatherAgent":
 			return new WeatherAgent(data, id, begin, repeat)
 		default:
 	}
@@ -170,7 +170,6 @@ function make_hash(url) {
 				.then(buffer => {
 					const hashArray = Array.from(new Uint8Array(buffer));
 					const hashed = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-					console.log("Found test")
 					console.log(hashed)
 					return hashed
 				})
@@ -194,17 +193,14 @@ function human_readable_start(time) {
  	const days = Math.floor(time / (24 * 60 * 60 * 1000))
  
  	const test = new Date(time)
- 	console.log(test)
- 	console.log(`Days: ${days}, Hours: ${hours}, Minutes: ${minutes}, Seconds: ${seconds}`)
+ 	// console.log(`Days: ${days}, Hours: ${hours}, Minutes: ${minutes}, Seconds: ${seconds}`)
  	return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
  
  }
 
 app.post('/agents/reorder', (req, res) => {
-  console.log(req.body)
   const { id, newIndex, newParentId } = req.body;
   const agent = agent_map[id]
-    console.log(agent)
   if (!agent) return res.status(404).send('Agent not found');
 
   const old_parent = agent_map[agent.parent_id]
@@ -219,11 +215,9 @@ app.post('/agents/reorder', (req, res) => {
     }
 
     const updatedAgents = Object.keys(agent_map).map(id => {
-	console.log(agent_map[id])
 	return {"id": id, hasChildren: agent_map[id].downstream_agent ? true : false}
     })
 
-    console.log(updatedAgents)
     
 res.json({
   success: true,
@@ -234,11 +228,9 @@ res.json({
 
 
 app.get("/dashboard", (req, res) => {
-	console.log("visitor")
     const db = connect_db()
 	db.all("SELECT * FROM tasks", (err, rows) => {
 
-	    console.log(rows)
 		// Make this more readable for the template
 	    rows.map(row => {
 		const agent = agent_map[row.id]
@@ -247,13 +239,10 @@ app.get("/dashboard", (req, res) => {
 		row.repeat = human_readable_repeat(row.repeat)
 		row.isRunning = agent_map[row.id].isRunning
 		row.name = agent.name
-		console.log(agent)
-		console.log(agent.parent_id)
 		row.parent_id = agent.parent_id
 		return row
 	    })
 
-	    console.log(rows)
 		res.render("dashboard", { agents: rows });
 	})
     db.close()
@@ -261,7 +250,6 @@ app.get("/dashboard", (req, res) => {
 
 // Get single agent by ID
 app.get('/agents/:id', (req, res) => {
-    console.log(req.params)
     const agent = agent_map[+req.params.id]
   if (!agent) return res.status(404).send('Not found');
   res.json(agent);
@@ -269,7 +257,6 @@ app.get('/agents/:id', (req, res) => {
 
 // Get agent configuration object
 app.get('/agent/config', (req, res) => {
-    console.log(req.params)
   if (!agent_configs) return res.status(404).send('Not found');
   res.json(agent_configs);
 });
@@ -288,7 +275,6 @@ app.post('/agents/edit', (req, res) => {
 
 // Toggle Agent on and off
 app.post('/agents/toggle/:id', (req, res) => {
-    console.log(req.params)
     const agent = agent_map[+req.params.id]
   if (!agent) return res.status(404).send('Not found');
     agent.toggle()
@@ -296,6 +282,105 @@ app.post('/agents/toggle/:id', (req, res) => {
 	id: agent.id,
 	isRunning : agent.isRunning
     });
+});
+
+// Delete Agent
+app.post('/agents/delete/:id', (req, res) => {
+	const agent = agent_map[+req.params.id]
+	if (!agent) return res.status(404).send('Not found');
+	agent.stop()
+
+	// TODO will also need to remove reference from parent
+	agent_map[+req.params.id] = []
+
+	const statement = `DELETE FROM tasks WHERE id=${+req.params.id}`
+	const db = connect_db()
+	db.all(statement)
+
+	db.all("SELECT * FROM tasks", (err, rows) => {
+
+		// Make this more readable for the template
+		rows.map(row => {
+			const agent = agent_map[row.id]
+			row.data = JSON.parse(row.data)
+			// row.start = human_readable_start(row.start)
+			row.repeat = human_readable_repeat(row.repeat)
+			row.isRunning = agent_map[row.id].isRunning
+			row.name = agent.name
+			row.parent_id = agent.parent_id
+			return row
+		})
+
+		try {
+			res.render("partials/agent_table_tree", { agents: rows }, (err, html) => {
+				if (err) return res.status(500).send(err.message);
+				res.send(html); // send back HTML fragment
+			});
+		} catch (err) {
+			res.status(500).json({ error: err.message });
+		}
+	});
+	db.close()
+
+});
+
+// Create Agent
+app.post('/agents/create', (req, res) => {
+
+	// if (!agent) return res.status(404).send('Not found');
+
+	const body = req.body
+
+	const start = new Date(req.body.start)
+	const repeat = +req.body.interval
+	let data = {}
+	Object.keys(body).forEach(key => {
+		if (key === "start" || key === "interval" || key === "agentID") return
+		data[key] = body[key]
+	});
+
+	data.parent_id = null;
+	data = JSON.stringify(data)
+	const db = connect_db()
+	const statement = `INSERT INTO tasks (start, repeat, data) VALUES (?, ?, ? ) RETURNING id;`
+	const query = db.get(statement, [start, repeat, data], (err, row) => {
+		if (err) {
+			console.error(err);
+		}
+		else {
+			console.log("inserted row with id: ", row.id)
+			row.begin = start
+			row.repeat = repeat
+			row.data = JSON.parse(data)
+			deploy_single_agent(row)
+		}
+	})
+
+	// Agent map probably a better way of doing this
+	db.all("SELECT * FROM tasks", (err, rows) => {
+
+		// Make this more readable for the template
+		rows.map(row => {
+			const agent = agent_map[row.id]
+			row.data = JSON.parse(row.data)
+			// row.start = human_readable_start(row.start)
+			row.repeat = human_readable_repeat(row.repeat)
+			row.isRunning = agent_map[row.id].isRunning
+			row.name = agent.name
+			row.parent_id = agent.parent_id
+			return row
+		})
+
+		try {
+			res.render("partials/agent_table_tree", { agents: rows }, (err, html) => {
+				if (err) return res.status(500).send(err.message);
+			    res.send(html); // send back HTML fragment
+			});
+		} catch (err) {
+			res.status(500).json({ error: err.message });
+		}
+	});
+	db.close()
 });
 
 app.listen(port)
