@@ -25,7 +25,7 @@ class Agent {
 	    console.log(`Agent [${this.id}: ${this.name}] - starting...`)
 
 	if(this.repeat != null){
-	    this.repeatId = this.perform_periodically()
+	    this.perform_periodically()
 	}
 	else if (this.start != null) {
 	    this.run()
@@ -41,7 +41,7 @@ class Agent {
 
 	clearInterval(this.repeatId)
 	this.isRunning = false;
-	    console.log(`Agent [${this.id}: ${this.name}] is stopped.`)
+	console.log(`Agent [${this.id}: ${this.name}] is stopped.`)
     }
 
     perform_periodically() {
@@ -59,14 +59,12 @@ class Agent {
 	}
 	// Use a timeout so we start the interval at the correct time
 	// Then the interval manages itself
-	let id = setTimeout(() => {
+	setTimeout(() => {
 	    this.run()
-	    return setInterval(x => {
+	    this.repeatId = setInterval(x => {
 		this.run()
 	    }, this.repeat)
 	}, startTime)
-
-	return id;
     }
 
 
