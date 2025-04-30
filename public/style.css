@@ -1,0 +1,332 @@
+/* Gruvbox Dark Colors */
+:root {
+  --bg: #282828;
+  --fg: #ebdbb2;
+  --gray: #928374;
+  --red: #fb4934;
+  --green: #b8bb26;
+  --yellow: #fabd2f;
+  --blue: #83a598;
+  --aqua: #8ec07c;
+  --orange: #fe8019;
+  --dark0: #1d2021;
+  --dark1: #3c3836;
+  --dark2: #504945;
+  --light1: #d5c4a1;
+}
+
+/* Base Styles */
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background-color: var(--bg);
+  color: var(--fg);
+  margin: 0;
+  padding: 30px;
+}
+
+h1 {
+  text-align: center;
+  color: var(--yellow);
+  margin-bottom: 24px;
+  font-size: 1.8rem;
+}
+
+/* Form Styling */
+form {
+  text-align: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+input, button {
+  padding: 6px 10px;
+  margin: 4px;
+  border: 1px solid var(--dark2);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  background-color: var(--dark1);
+  color: var(--fg);
+}
+
+input:focus, button:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+button {
+  background-color: var(--blue);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+button:hover {
+  background-color: var(--aqua);
+}
+
+/* Table Styling */
+table {
+  width: 95%;
+  margin: 0 auto;
+  border-collapse: collapse;
+  background-color: var(--dark1);
+  border: 1px solid var(--dark2);
+  border-radius: 4px;
+  overflow: hidden;
+  font-size: 0.9rem;
+}
+
+th, td {
+  padding: 6px 10px;
+  text-align: left;
+  border-right: 1px solid var(--dark2);
+  border-bottom: 1px solid var(--dark2);
+}
+
+th:last-child, td:last-child {
+  border-right: none;
+}
+
+thead {
+  background-color: var(--dark2);
+  color: var(--fg);
+  font-weight: bold;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: var(--dark0);
+}
+
+tbody tr:nth-child(even) {
+  background-color: var(--dark1);
+}
+
+tbody tr:hover {
+  background-color: var(--dark2);
+}
+
+/* Action Buttons in Table */
+td form {
+  display: inline;
+}
+
+td button {
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  margin-right: 4px;
+  border-radius: 3px;
+}
+
+td button[type="submit"]:first-child {
+  background-color: var(--green);
+}
+
+td button[type="submit"]:last-child {
+  background-color: var(--red);
+}
+
+/* Responsive Styling */
+@media screen and (max-width: 768px) {
+  table, thead, tbody, th, td, tr {
+    display: block;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tr {
+    margin-bottom: 12px;
+    border: 1px solid var(--dark2);
+    border-radius: 5px;
+    background-color: var(--dark0);
+    padding: 6px;
+  }
+
+  td {
+    border: none;
+    border-bottom: 1px solid var(--dark2);
+    position: relative;
+    padding-left: 50%;
+    text-align: right;
+  }
+
+  td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 10px;
+    width: 45%;
+    white-space: nowrap;
+    font-weight: bold;
+    color: var(--light1);
+    text-align: left;
+  }
+
+  td:last-child {
+    border-bottom: none;
+  }
+
+  form {
+    flex-direction: column;
+  }
+
+  input, button {
+    width: 90%;
+    margin: 6px auto;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+  }
+}
+.agent-row {
+  background-color: var(--dark1);
+  margin: 4px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--dark2);
+  border-radius: 4px;
+}
+
+.agent-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drag-cell {
+  width: 24px;
+  padding: 0;
+  text-align: center;
+}
+
+.drag-handle {
+  cursor: grab;
+  background: none;
+  border: none;
+  color: var(--aqua);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+.collapse-toggle {
+  background: none;
+  border: none;
+  color: var(--yellow);
+  font-size: 0.9rem;
+  margin-right: 5px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.agent-row[data-hidden="true"] {
+  display: none;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(40, 40, 40, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--dark1);
+  border: 1px solid var(--dark2);
+  padding: 20px;
+  border-radius: 6px;
+  color: var(--fg);
+  width: 300px;
+}
+
+.modal h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: var(--yellow);
+}
+
+.modal form {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal input {
+  margin-bottom: 10px;
+}
+
+.modal .actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.modal button {
+  margin-top: 5px;
+}
+
+.modal-overlay.show {
+  display: flex;
+}
+.toggle-button {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 4px;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.toggle-button.stopped {
+  background-color: var(--green);
+  color: var(--dark0);
+}
+
+.toggle-button.running {
+  background-color: var(--red);
+  color: var(--light1);
+}
+.agent-row.dragging-child {
+  opacity: 0.7;
+  background-color: var(--dark2);
+}
+
+.agent-row.dragging-parent {
+  box-shadow: 0 2px 5px var(--fg);
+}
+.nest-target {
+  display: none;
+  margin-top: 4px;
+  padding: 4px;
+  border: 1px dashed var(--yellow);
+  background-color: rgba(250, 189, 47, 0.05);
+  font-size: 0.75rem;
+  text-align: center;
+  border-radius: 4px;
+  color: var(--yellow);
+  cursor: pointer;
+}
+.agent-row.dragging-parent .nest-target {
+  display: block;
+}
+.nest-target.hover {
+  background-color: rgba(250, 189, 47, 0.15);
+}
+.agent-row.dragging-parent {
+  visibility: hidden; /* hide original row */
+}
+
+.sortable-ghost {
+  opacity: 0.6;
+  background-color: var(--dark1);
+  border: 1px dashed var(--fg);
+}
+

@@ -1,8 +1,289 @@
-<h2>Tasks</h2>
-<a href="/add">Add New</a>
-<ul>
-  <% tasks.forEach(task => { %>
-    <li><%= task.data.task %> — <%= task.start %> - <%=task.repeat %></li>
-  <% }) %>
-</ul>
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>Eye Dashboard</title>
+    <link rel="stylesheet" href="/style.css">
+    </head>
+    <body>
+    <h1>Argus Agents Dashboard</h1>
+    
+    <!-- <form action="/agents/add" method="POST"> -->
+    <!--   <input name="name" placeholder="Agent Name" required> -->
+    <!--   <input name="startTime" type="datetime-local" required> -->
+    <!--   <input name="interval" type="number" placeholder="Interval (ms)" required> -->
+    <!--   <button type="submit">Add Agent</button> -->
+    <!-- </form> -->
+
+    <button type="submit">Add Agent</button>
+
+    <table id="agent-table">
+    <thead>
+    <tr>
+    <th></th>
+    <th>Name</th>
+    <th>Start Time</th>
+    <th>Interval</th>
+    <th>Status</th>
+    <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody id="agent-body">
+    <%- include('partials/agent_table_tree', { agents }) %>
+    </tbody>
+    </table>
+
+    <div class="modal-overlay" id="editModalOverlay">
+    <div class="modal">
+    <h2>Edit Agent</h2>
+    <form id="editAgentForm" method="POST" action="/agents/edit">
+    <input type="hidden" name="agentId" />
+    <label>Name:</label>
+    <input type="text" name="name" required />
+    <label>Start Time:</label>
+    <input type="datetime-local" name="startTime" required />
+    <label>Interval (ms):</label>
+    <input type="number" name="interval" required />
+    <div class="actions">
+    <button type="submit">Save</button>
+    <button type="button" id="cancelEdit">Cancel</button>
+    </div>
+    </form>
+    </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+    <script>
+    const table_body = document.getElementById('agent-body');
+
+let currentNestTarget = null;
+new Sortable(table_body, {
+    handle: ".drag-handle",
+    animation: 150,
+    group: 'nested',
+    fallbackOnBody: true,
+    swapThreshold: 0.25,
+    draggable: ".agent-row",
+
+    onStart: function (e) {
+	const draggedRow = e.item;
+	const draggedId = draggedRow.dataset.id;
+
+	e.item._draggedId = draggedId;
+
+	draggedRow.classList.add('dragging-parent');
+
+	// Collect all descendant rows
+	const allRows = Array.from(table_body.querySelectorAll(".agent-row"));
+	const draggedLevel = parseInt(draggedRow.dataset.level || 0);
+
+	let i = allRows.indexOf(draggedRow);
+	let j = i + 1;
+	children = [];
+
+	while (j < allRows.length) {
+	    const row = allRows[j];
+	    const level = parseInt(row.dataset.level || 0);
+	    if (level <= draggedLevel) break;
+	    row.classList.add('dragging-child');
+	    children.push(row);
+	    j++;
+	}
+
+	draggedRow._draggedChildren = children;
+
+	// Show nesting targets
+	document.querySelectorAll('.nest-target').forEach(t => {
+	    if (t.closest('tr') !== draggedRow) t.style.display = 'block';
+	});
+    },
+
+    onMove(e) {
+	const overRow = e.related; // the row we're currently over
+	if (!overRow) return;
+
+	const target = overRow.querySelector(".nest-target");
+
+	if (currentNestTarget && currentNestTarget !== target) {
+	    currentNestTarget.classList.remove("hover");
+	    currentNestTarget = null;
+	}
+
+	if (target && target !== currentNestTarget) {
+	    currentNestTarget = target;
+	    currentNestTarget.classList.add("hover");
+	}
+    },
+
+    onEnd: function (e) {
+	const draggedRow = e.item;
+	const draggedId = draggedRow._draggedId;
+	const childRows = draggedRow._draggedChildren || [];
+
+	// Clean up class markers
+	draggedRow.classList.remove('dragging-parent');
+	childRows.forEach(row => row.classList.remove('dragging-child'));
+
+	// Find where the dragged row now is
+	const allRows = Array.from(table_body.querySelectorAll(".agent-row"));
+	const insertIndex = allRows.indexOf(draggedRow);
+
+	// Reinsert each child row right after the parent
+	childRows.forEach((childRow, i) => {
+	    const ref = table_body.children[insertIndex + i + 1];
+	    table_body.insertBefore(childRow, ref || null);
+	});
+
+	// Detect parent from nesting drop or indent logic
+	const newIndex = Array.from(table_body.children).indexOf(draggedRow);
+	let newParentId = null;
+
+	if (currentNestTarget) {
+	    newParentId = currentNestTarget.dataset.targetId;
+	} else {
+	    // fallback to closest previous parent based on level
+	    for (let i = newIndex - 1; i >= 0; i--) {
+		const row = table_body.children[i];
+		const level = parseInt(row.dataset.level || 0);
+		if (level < parseInt(draggedRow.dataset.level || 0)) {
+		    newParentId = row.dataset.id;
+		    break;
+		}
+	    }
+	}
+
+	e.item.dataset.parentId = newParentId
+	
+
+	// Clear nesting visuals
+	document.querySelectorAll('.nest-target').forEach(t => {
+	    t.style.display = 'none';
+	    t.classList.remove('hover');
+	});
+	currentNestTarget = null;
+
+	fetch('/agents/reorder', {
+	    method: 'POST',
+	    headers: { 'Content-Type': 'application/json' },
+	    body: JSON.stringify({
+		id: draggedId,
+		newIndex,
+		newParentId
+	    })
+	})
+	    .then(res => res.json())
+	    .then(data => {
+		if (!data.success) return;
+
+		data.updatedAgents.forEach(agent => {
+		    const row = document.querySelector(`tr[data-id="${agent.id}"]`);
+		    const toggleContainer = row.querySelector('.name-container');
+		    const existingToggle = row.querySelector('.collapse-toggle');
+
+		    // Remove old toggle if necessary
+		    if (existingToggle && !agent.hasChildren) {
+			existingToggle.remove();
+		    }
+
+		    // Add toggle if it doesn’t exist and agent now has children
+		    if (!existingToggle && agent.hasChildren) {
+			const toggle_button = document.createElement('button');
+			toggle_button.classList.add('collapse-toggle');
+			toggle_button.dataset.agentId = agent.id;
+			toggle_button.innerText = '▼';
+
+			toggle_button.addEventListener('click', (e) => {
+			    e.stopPropagation();
+			    const agentId = toggle_button.dataset.agentId;
+			    const isCollapsed = toggle_button.textContent === '▶';
+			    toggle_button.textContent = isCollapsed ? '▼' : '▶';
+			    toggleChildren(agentId, !isCollapsed);
+			});
+
+			// Prepend to cell
+			toggleContainer?.prepend(toggle_button);
+		    }
+		});
+	    });
+    }
+});
+
+    document.querySelectorAll('.toggle-button').forEach(button => {
+	button.addEventListener('click', async () => {
+
+	    const agentId = button.dataset.agentId;
+
+	    const res = await fetch(`/agents/toggle/${agentId}`, {
+		method: 'POST'
+	    });
+
+	    if (!res.ok) {
+		alert("Failed to toggle agent.");
+		return;
+	    }
+
+	    const data = await res.json();
+
+	    // Update button label
+	    button.textContent = data.isRunning ? "Stop" : "Start";
+
+	    // Update button color class
+	    button.classList.toggle('running', data.isRunning);
+	    button.classList.toggle('stopped', !data.isRunning);
+
+
+	    // Update status text
+	    const statusCell = document.getElementById(`status-${data.id}`);
+	    if (statusCell) statusCell.textContent = data.isRunning ? "Running" : "Stopped";
+	});
+    });
+
+    // Collapse/Expand child rows
+
+
+    document.querySelectorAll('.collapse-toggle').forEach(button => {
+	button.addEventListener('click', () => {
+	    const agentId = button.dataset.agentId;
+	    const isCollapsed = button.textContent === '▶';
+	    button.textContent = isCollapsed ? '▼' : '▶';
+	    toggleChildren(agentId, !isCollapsed);
+	});
+    });
+
+    function toggleChildren(parentId, hide) {
+	const children = document.querySelectorAll(`.agent-row[data-parent-id="${parentId}"]`);
+	children.forEach(child => {
+	    child.dataset.hidden = hide;
+	    if (hide) {
+		toggleChildren(child.dataset.id, true);
+	    }
+	});
+    }
+
+    // Modal Edit Logic
+    const modalOverlay = document.getElementById('editModalOverlay');
+    const editForm = document.getElementById('editAgentForm');
+
+    document.querySelectorAll('.edit-agent').forEach(button => {
+	button.addEventListener('click', () => {
+	    const agentId = button.dataset.agentId;
+	    fetch(`/agents/${agentId}`)
+		.then(res => res.json())
+		.then(agent => {
+		    console.log(agent)
+		    editForm.agentId.value = agent.id;
+		    editForm.name.value = agent.name;
+		    editForm.interval.value = agent.repeat;
+		    editForm.startTime.value = new Date(agent.begin).toISOString().slice(0, 16);
+		    modalOverlay.classList.add('show');
+		});
+	});
+    });
+
+    document.getElementById('cancelEdit').addEventListener('click', () => {
+	modalOverlay.classList.remove('show');
+    });
+
+    </script>
+	</html>
 

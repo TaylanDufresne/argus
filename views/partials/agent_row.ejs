@@ -1,0 +1,16 @@
+
+<tr>
+  <td data-label="Name"><%= agent.data.task %></td>
+  <td data-label="Start Time"><%= new Date(agent.start).toLocaleString() %></td>
+  <td data-label="Interval"><%= agent.repeat %> ms</td>
+  <td data-label="Status"><%= agent.isRunning ? "Running" : "Stopped" %></td>
+  <td data-label="Actions">
+    <form action="/agents/toggle/<%= agent.id %>" method="POST" style="display:inline;">
+      <button type="submit"><%= agent.isRunning ? "Stop" : "Start" %></button>
+    </form>
+    <form action="/agents/delete/<%= agent.id %>" method="POST" style="display:inline;">
+      <button type="submit">Delete</button>
+    </form>
+  </td>
+</tr>
+

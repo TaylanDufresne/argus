@@ -1,0 +1,64 @@
+
+<% function renderRow(agent, level = 0) {
+ const children = agents.filter(a => a.parent_id === agent.id).sort((a,b) => a.position - b.position);
+const hasChildren = children.length > 0;
+%>
+
+
+ <tr class="agent-row" 
+      data-id="<%= agent.id %>" 
+      data-parent-id="<%= agent.parent_id %>" 
+      data-level="<%= level %>" 
+      style="--nest-level: <%= level %>;" 
+      <%= agent.parent_id ? 'data-collapsible="true"' : '' %>>
+    <td class="drag-cell">
+      <button class="drag-handle" title="Drag">☰</button>
+    </td>
+
+    <td class="name-container">
+      <% if (hasChildren) { %>
+      <button class="collapse-toggle" data-agent-id="<%= agent.id %>">▼</button>
+      <% } else { %>
+      <!-- Style this to show a dash or something with each level of nesting -->
+      <span style="display:inline-block;width:1.5em;"></span>
+      <% } %>
+      <%= agent.name %>
+      <!-- Nesting drop zone -->
+      <div class="nest-target" data-target-id="<%= agent.id %>">Drop here to nest</div>
+    </td>
+
+
+    <td><%= new Date(agent.start).toLocaleString() %></td>
+
+    <td><%= agent.repeat %> ms</td>
+
+    <td id="status-<%= agent.id %>"><%= agent.isRunning ? "Running" : "Stopped" %></td>
+    <td>
+      <button class="toggle-button <%= agent.isRunning ? 'running' : 'stopped' %>"
+	      data-agent-id="<%= agent.id %>">
+	<%= agent.isRunning ? "Stop" : "Start" %>
+      </button>
+      <button class="edit-agent"
+	      data-agent-id="<%= agent.id %>">
+	Edit
+      </button>
+      <form action="/agents/delete/<%= agent.id %>"
+	    method="POST" style="display:inline;">
+        <button type="submit">
+	  Delete
+	</button>
+      </form>
+      <form action="/agents/view_data/<%= agent.id %>"
+	    method="GET"
+	    style="display:inline;">
+        <button type="submit">
+	  View
+	</button>
+      </form>
+    </td>
+  </tr>
+  <% children.forEach(child => renderRow(child, level + 1)); %>
+
+<% } %>
+
+<% agents.filter(a => !a.parent_id).sort((a, b) => a.position - b.position).forEach(agent => renderRow(agent)); %>

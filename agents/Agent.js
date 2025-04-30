@@ -1,8 +1,9 @@
 
 class Agent {
     constructor(name, id, begin = Date.now(), repeat = 3600000){
-	this.name = name;
+	this.name = `${name}-${id}`;
 	this.id = id;
+	this.parentId = null;
 	this.repeat = repeat
 	this.begin = begin
 	this.repeatId = null;
@@ -99,6 +100,19 @@ class Agent {
 	}
 	this.downstream_agent.receive(data)
 	
+    }
+
+    set_parent(id){
+	this.parent_id = id;
+    }
+
+    toggle(){
+	if (this.isRunning){
+	    this.stop()
+	}
+	else{
+	    this.start()
+	}
     }
 
 
