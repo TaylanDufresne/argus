@@ -192,13 +192,9 @@ app.post('/agents/reorder', (req, res) => {
     if (old_parent){
 	old_parent.set_downstream_agent(null)
     }
-
+    if(updated_parent){
   updated_parent.set_downstream_agent(agent)
-    console.log("\n\n\n\n\n")
-    console.log(old_parent)
-  console.log(agent)
-  console.log(updated_parent)
-    console.log("\n\n\n\n\n")
+    }
 
     const updatedAgents = Object.keys(agent_map).map(id => {
 	console.log(agent_map[id])

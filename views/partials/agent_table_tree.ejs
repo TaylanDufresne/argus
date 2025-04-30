@@ -20,7 +20,7 @@ const hasChildren = children.length > 0;
       <button class="collapse-toggle" data-agent-id="<%= agent.id %>">▼</button>
       <% } else { %>
       <!-- Style this to show a dash or something with each level of nesting -->
-      <span style="display:inline-block;width:1.5em;"></span>
+      <span class="name-text" style="display:inline-block;width:1.5em;"></span>
       <% } %>
       <%= agent.name %>
       <!-- Nesting drop zone -->

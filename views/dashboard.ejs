@@ -284,6 +284,18 @@ new Sortable(table_body, {
 	modalOverlay.classList.remove('show');
     });
 
+// Indentation spacing
+ document.querySelectorAll('.name-text').forEach(span => {
+    const tr = span.closest('tr');
+    if (!tr) return;
+
+    const style = getComputedStyle(tr);
+    const level = parseInt(style.getPropertyValue('--nest-level'), 10);
+    if (!isNaN(level)) {
+      span.setAttribute('data-dashes', ' -- '.repeat(level));
+    }
+  });
+
     </script>
 	</html>
 

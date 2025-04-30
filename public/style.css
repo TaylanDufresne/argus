@@ -330,3 +330,12 @@ td button[type="submit"]:last-child {
   border: 1px dashed var(--fg);
 }
 
+/* Indentation for nested rows */
+/* .agent-row td { */
+/*   padding-left: calc(var(--nest-level) * 20px + 10px); */
+/* } */
+
+.name-text::before {
+    content: attr(data-dashes);
+    margin-right: 0.5em;
+}
