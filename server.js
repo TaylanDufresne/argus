@@ -10,6 +10,28 @@ const app = express()
 const WeatherAgent = require("./agents/WeatherAgent.js")
 const LoggingAgent = require("./agents/LoggingAgent.js")
 const SqlInsertionAgent = require("./agents/SqlInsertionAgent.js");
+
+const agent_configs = {
+    WeatherAgent: {
+	fields: [
+	{ name: 'start', type: 'datetime-local' },
+	{ name: 'interval', type: 'number' },
+	{ name: 'location', type: 'text' },
+	{ name: 'offset', type: 'number'}
+    ]},
+    LoggingAgent: {
+	fields: [
+    ]},
+    SqlInsertionAgent: {
+	fields: [
+	{ name: 'start', type: 'datetime-local' },
+	{ name: 'interval', type: 'number' },
+	{ name: 'tb_name', type: 'text'}, // Probably config this? Or agents can pass it downstream - can be ignored by anything that wouldn't use it
+	{ name: 'isTimeSeries', type: 'checkbox'}
+    ]}
+}
+
+
 const e = require("express");
 
 
@@ -243,6 +265,13 @@ app.get('/agents/:id', (req, res) => {
     const agent = agent_map[+req.params.id]
   if (!agent) return res.status(404).send('Not found');
   res.json(agent);
+});
+
+// Get agent configuration object
+app.get('/agent/config', (req, res) => {
+    console.log(req.params)
+  if (!agent_configs) return res.status(404).send('Not found');
+  res.json(agent_configs);
 });
 
 // Edit agent

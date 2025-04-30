@@ -7,14 +7,9 @@
     <body>
     <h1>Argus Agents Dashboard</h1>
     
-    <!-- <form action="/agents/add" method="POST"> -->
-    <!--   <input name="name" placeholder="Agent Name" required> -->
-    <!--   <input name="startTime" type="datetime-local" required> -->
-    <!--   <input name="interval" type="number" placeholder="Interval (ms)" required> -->
-    <!--   <button type="submit">Add Agent</button> -->
-    <!-- </form> -->
 
-    <button type="submit">Add Agent</button>
+<div class="agent_container">
+    <button class="create_button" onclick="show_add_modal()">Create Agent</button>
 
     <table id="agent-table">
     <thead>
@@ -32,8 +27,57 @@
     </tbody>
     </table>
 
-    <div class="modal-overlay" id="editModalOverlay">
-    <div class="modal">
+</div>
+
+    <div class="modal-overlay"
+	 id="addModalOverlay">
+      <div class="modal">
+	<h2>Add Agent</h2>
+	<form id="addAgentForm"
+	      method="POST"
+	      action="/agents/add">
+	  <input type="hidden"
+		 name="agentId" />
+	  <!-- Will likely want to name agents and workflows eventually -->
+	  <!-- <label>Name:</label> -->
+	  <!-- <input type="text" -->
+	  <!-- 	   name="name" -->
+	  <!-- 	   required /> -->
+	  <label for="type">Agent Type:</label>
+	  <select id="agent-type"
+		  name="type" required />
+	  <!-- This will eventually be programmatically built, but do this for testing -->
+	  <option value="LoggingAgent">LoggingAgent</option>
+	  <option value="WeatherAgent">WeatherAgent</option>
+	  <option value="SqlInsertionAgent">SQLInsertionAgent</option>
+</select>
+    <div class="update-modal" id="updateable">
+<label>Start Time:</label>
+<input type="datetime-local"
+       name="startTime" required />
+<label>Interval:</label>
+<input type="number"
+       name="interval" required />
+<label for="units">Units:</label>
+<select id="units"
+	name="units" required />
+<option value="seconds">Second(s)</option>
+<option value="minutes">Minute(s)</option>
+<option value="hours">Hour(s)</option>
+<option value="days">Day(s)</option>
+</select>
+</div>
+<div class="actions">
+  <button type="submit">Save</button>
+  <button type="button"
+	  id="cancelAdd">Cancel</button>
+</div>
+</form>
+</div>
+</div>
+
+<div class="modal-overlay" id="editModalOverlay">
+  <div class="modal">
     <h2>Edit Agent</h2>
     <form id="editAgentForm" method="POST" action="/agents/edit">
     <input type="hidden" name="agentId" />
@@ -54,7 +98,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
     <script>
-    const table_body = document.getElementById('agent-body');
+
+function show_add_modal(){
+    const addModal = document.getElementById("addModalOverlay")
+    addModal.classList.add("show");
+}
+
+const table_body = document.getElementById('agent-body');
 
 let currentNestTarget = null;
 new Sortable(table_body, {
@@ -208,94 +258,153 @@ new Sortable(table_body, {
     }
 });
 
-    document.querySelectorAll('.toggle-button').forEach(button => {
-	button.addEventListener('click', async () => {
+document.querySelectorAll('.toggle-button').forEach(button => {
+    button.addEventListener('click', async () => {
 
-	    const agentId = button.dataset.agentId;
+	const agentId = button.dataset.agentId;
 
-	    const res = await fetch(`/agents/toggle/${agentId}`, {
-		method: 'POST'
+	const res = await fetch(`/agents/toggle/${agentId}`, {
+	    method: 'POST'
+	});
+
+	if (!res.ok) {
+	    alert("Failed to toggle agent.");
+	    return;
+	}
+
+	const data = await res.json();
+
+	// Update button label
+	button.textContent = data.isRunning ? "Stop" : "Start";
+
+	// Update button color class
+	button.classList.toggle('running', data.isRunning);
+	button.classList.toggle('stopped', !data.isRunning);
+
+
+	// Update status text
+	const statusCell = document.getElementById(`status-${data.id}`);
+	if (statusCell) statusCell.textContent = data.isRunning ? "Running" : "Stopped";
+    });
+});
+
+
+
+
+
+
+// Collapse/Expand child rows
+document.querySelectorAll('.collapse-toggle').forEach(button => {
+    button.addEventListener('click', () => {
+	const agentId = button.dataset.agentId;
+	const isCollapsed = button.textContent === '▶';
+	button.textContent = isCollapsed ? '▼' : '▶';
+	toggleChildren(agentId, !isCollapsed);
+    });
+});
+
+function toggleChildren(parentId, hide) {
+    const children = document.querySelectorAll(`.agent-row[data-parent-id="${parentId}"]`);
+    children.forEach(child => {
+	child.dataset.hidden = hide;
+	if (hide) {
+	    toggleChildren(child.dataset.id, true);
+	}
+    });
+}
+
+// Modal Edit Logic
+const editModal = document.getElementById('editModalOverlay');
+const editForm = document.getElementById('editAgentForm');
+
+const addModal = document.getElementById("addModalOverlay")
+const addForm = document.getElementById('addAgentForm');
+
+document.querySelectorAll('.edit-agent').forEach(button => {
+    button.addEventListener('click', () => {
+	const agentId = button.dataset.agentId;
+	fetch(`/agents/${agentId}`)
+	    .then(res => res.json())
+	    .then(agent => {
+		// Need logic for different agents
+		// Need to update modal depending on agent type
+		console.log(agent)
+		editForm.agentId.value = agent.id;
+		editForm.name.value = agent.name;
+		editForm.interval.value = agent.repeat;
+		editForm.startTime.value = new Date(agent.begin).toISOString().slice(0, 16);
+		editModal.classList.add('show');
 	    });
-
-	    if (!res.ok) {
-		alert("Failed to toggle agent.");
-		return;
-	    }
-
-	    const data = await res.json();
-
-	    // Update button label
-	    button.textContent = data.isRunning ? "Stop" : "Start";
-
-	    // Update button color class
-	    button.classList.toggle('running', data.isRunning);
-	    button.classList.toggle('stopped', !data.isRunning);
-
-
-	    // Update status text
-	    const statusCell = document.getElementById(`status-${data.id}`);
-	    if (statusCell) statusCell.textContent = data.isRunning ? "Running" : "Stopped";
-	});
     });
+});
 
-    // Collapse/Expand child rows
+// Update modal dependant on agent type
+function updateModalFields(agent_fields){
+    const container = document.getElementById("updateable")
+    container.innerHTML = ''
+    agent_fields.forEach(field => {
+	if (field.type !== "checkbox"){
+	    const input = document.createElement("input");
+	    input.name = field.name;
+	    input.type = field.type;
+	    input.placeholder = field.name;
 
+	    const label = document.createElement('label');
+	    label.textContent = field.name;
 
-    document.querySelectorAll('.collapse-toggle').forEach(button => {
-	button.addEventListener('click', () => {
-	    const agentId = button.dataset.agentId;
-	    const isCollapsed = button.textContent === '▶';
-	    button.textContent = isCollapsed ? '▼' : '▶';
-	    toggleChildren(agentId, !isCollapsed);
-	});
-    });
+	    container.appendChild(label);
+	    container.appendChild(input);
+	}
+	else{
+	    const input = document.createElement("input");
+	    input.name = field.name;
+	    input.type = field.type;
+	    input.placeholder = field.name;
+	    input.className = "toggle-checkbox"
 
-    function toggleChildren(parentId, hide) {
-	const children = document.querySelectorAll(`.agent-row[data-parent-id="${parentId}"]`);
-	children.forEach(child => {
-	    child.dataset.hidden = hide;
-	    if (hide) {
-		toggleChildren(child.dataset.id, true);
-	    }
-	});
-    }
+	    const label = document.createElement('label');
+	    label.textContent = field.name;
+	    const wrapper = document.createElement('label');
+	    wrapper.className = "toggle-wrapper"
 
-    // Modal Edit Logic
-    const modalOverlay = document.getElementById('editModalOverlay');
-    const editForm = document.getElementById('editAgentForm');
+	    const span = document.createElement('span')
+	    span.className = "toggle-slider"
+	    wrapper.appendChild(input)
+	    wrapper.appendChild(span)
 
-    document.querySelectorAll('.edit-agent').forEach(button => {
-	button.addEventListener('click', () => {
-	    const agentId = button.dataset.agentId;
-	    fetch(`/agents/${agentId}`)
-		.then(res => res.json())
-		.then(agent => {
-		    console.log(agent)
-		    editForm.agentId.value = agent.id;
-		    editForm.name.value = agent.name;
-		    editForm.interval.value = agent.repeat;
-		    editForm.startTime.value = new Date(agent.begin).toISOString().slice(0, 16);
-		    modalOverlay.classList.add('show');
-		});
-	});
-    });
+	    container.appendChild(label);
+	    container.appendChild(wrapper);
+	}
+    })
+}
+document.getElementById('agent-type').addEventListener('change', (e) => {
+    const chosen_agent = e.target.value
+    fetch("/agent/config")
+	.then(res => res.json())
+	.then(config => {
+	    updateModalFields(config[chosen_agent].fields)
+	})
+})
 
-    document.getElementById('cancelEdit').addEventListener('click', () => {
-	modalOverlay.classList.remove('show');
-    });
+document.getElementById('cancelEdit').addEventListener('click', () => {
+    editModal.classList.remove('show');
+});
+document.getElementById('cancelAdd').addEventListener('click', () => {
+    addModal.classList.remove('show');
+});
 
 // Indentation spacing
- document.querySelectorAll('.name-text').forEach(span => {
+document.querySelectorAll('.name-text').forEach(span => {
     const tr = span.closest('tr');
     if (!tr) return;
 
     const style = getComputedStyle(tr);
     const level = parseInt(style.getPropertyValue('--nest-level'), 10);
     if (!isNaN(level)) {
-      span.setAttribute('data-dashes', ' -- '.repeat(level));
+	span.setAttribute('data-dashes', ' -- '.repeat(level));
     }
-  });
+});
 
-    </script>
-	</html>
+</script>
+    </html>
 

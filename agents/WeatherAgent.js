@@ -17,10 +17,17 @@ class WeatherAgent extends Agent {
 		})
 	}
 	else {
-	    this.send_downstream(this.get_weather()
-				 .then(weather => {
-				     return this.parse_weather(weather, this.calculate_day())
-				 }))
+	    try{
+		this.get_weather()
+		    .then(weather => {
+			return this.parse_weather(weather, this.calculate_day())
+		    }).then(weather => {
+			this.send_downstream(weather)
+		    })
+	    }
+	    catch{
+		this.send_downstream(`${this.name} Error fetching weather.`)
+	    }
 	}
     }
 
@@ -35,7 +42,7 @@ class WeatherAgent extends Agent {
 	    .then(data => data.weather)
     }
 
-    parse_weather(weather, day) {
+    async parse_weather(weather, day) {
 	for (let data of weather) {
 	    if (data.date === day) {
 

@@ -38,7 +38,7 @@ form {
   flex-wrap: wrap;
 }
 
-input, button {
+input, button, select {
   padding: 6px 10px;
   margin: 4px;
   border: 1px solid var(--dark2);
@@ -52,6 +52,58 @@ input:focus, button:focus {
   outline: none;
   border-color: var(--blue);
 }
+/* Base Styles */
+.toggle-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+  margin: auto;
+}
+
+
+/* Hide the default checkbox */
+.toggle-wrapper input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #504945; /* Gruvbox off color */
+  border-radius: 34px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transition: 0.3s;
+}
+
+/* The circle */
+.toggle-slider::before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 4px;
+  bottom: 4px;
+  background-color: #ebdbb2; /* Gruvbox light foreground */
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+/* Toggle On */
+.toggle-wrapper input:checked + .toggle-slider {
+  background-color: #98971a; /* Gruvbox green */
+}
+
+/* Move the circle */
+.toggle-wrapper input:checked + .toggle-slider::before {
+  transform: translateX(24px);
+}
 
 button {
   background-color: var(--blue);
@@ -64,9 +116,19 @@ button:hover {
   background-color: var(--aqua);
 }
 
-/* Table Styling */
-table {
+.agent_container {
   width: 95%;
+  margin: 0 auto;
+}
+.create_button{
+    width: 100%;
+  display: block;
+  margin: 0;
+}
+
+/* table styling */
+table {
+  width: 100%;
   margin: 0 auto;
   border-collapse: collapse;
   background-color: var(--dark1);
@@ -74,6 +136,7 @@ table {
   border-radius: 4px;
   overflow: hidden;
   font-size: 0.9rem;
+  border: 1px solid blue;
 }
 
 th, td {
@@ -239,6 +302,14 @@ td button[type="submit"]:last-child {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+}
+
+.update-modal {
+  background: var(--dark1);
+  border: 1px solid var(--dark2);
+  color: var(--fg);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal {
