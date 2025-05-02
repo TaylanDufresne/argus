@@ -90,8 +90,8 @@ class Agent {
     // Wrapper method to make sending/receiving more intuitive
     async send_downstream(data){
 	data = await data
-	data["parent"] = `${this.name}`
-	data["parent_id"] = `${this.id}`
+	data.parent = `${this.name}`
+	data.parent_id = `${this.id}`
 	if(!this.downstream_agent){
 	    console.warn(`Agent [${this.id}: ${this.name}] does not have a downstream agent.`);
 	    return

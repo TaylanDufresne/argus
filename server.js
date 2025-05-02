@@ -55,12 +55,21 @@ const db = new sqlite3.Database('argus.db', (err) => {
 
 var eyes = 0
 
+const sql_statement = "CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, start INTEGER, repeat INTEGER, data TEXT)"
+db.exec(sql_statement, (err) => {
+    if (err){
+	console.error(err.message)
+    }
+});
+
 db.all("select * from tasks", [], (err, rows) => {
-	if (err) {
-		console.error(err.message);
-	}
+    if (err) {
+	console.error(err.message);
+    }
+    if (rows){
 	eyes = rows.length
 	deploy_agents(rows, db)
+    }
 });
 
 db.close()
@@ -74,7 +83,6 @@ function connect_db(){
 	console.log('Connected to the database.');
     });
     return db
-
 }
 
 
@@ -232,6 +240,10 @@ app.get("/dashboard", (req, res) => {
 	db.all("SELECT * FROM tasks", (err, rows) => {
 
 		// Make this more readable for the template
+	    if(!rows){
+		rows = []
+	    }
+	    else{
 	    rows.map(row => {
 		const agent = agent_map[row.id]
 		row.data = JSON.parse(row.data)
@@ -242,6 +254,7 @@ app.get("/dashboard", (req, res) => {
 		row.parent_id = agent.parent_id
 		return row
 	    })
+	    }
 
 		res.render("dashboard", { agents: rows });
 	})

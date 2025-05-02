@@ -6,24 +6,21 @@ class WeatherAgent extends Agent {
     constructor(props, id, begin, repeat) {
 	super(`WeatherAgent-${props.location}`, id, begin, repeat)
 	this.location = props.location
-	this.offset = props.offset
+	this.offset = +props.offset
     }
 
     async run() {
-	if (!this.downstream_agent) {
-	    return this.get_weather()
-		.then(weather => {
-		    return this.parse_weather(weather, this.calculate_day())
-		})
-	}
-	else {
+
+	const weather = await this.get_weather()
+	const day = this.calculate_day()
+
+	const formatted_weather = this.parse_weather(weather, day)
+
+	if(!this.downstream_agent) return formatted_weather
+
+	else{
 	    try{
-		this.get_weather()
-		    .then(weather => {
-			return this.parse_weather(weather, this.calculate_day())
-		    }).then(weather => {
-			this.send_downstream(weather)
-		    })
+		this.send_downstream(formatted_weather)
 	    }
 	    catch{
 		this.send_downstream(`${this.name} Error fetching weather.`)
@@ -36,13 +33,13 @@ class WeatherAgent extends Agent {
     }
 
 
-    get_weather() {
+    async get_weather() {
 	return fetch(`https://wttr.in/${this.location}?format=j1`)
 	    .then(response => response.json())
 	    .then(data => data.weather)
     }
 
-    async parse_weather(weather, day) {
+    parse_weather(weather, day) {
 	for (let data of weather) {
 	    if (data.date === day) {
 
@@ -66,6 +63,7 @@ class WeatherAgent extends Agent {
 	const month = date.getMonth() + 1
 	const year = date.getFullYear()
 
+	
 	const formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
 
 	return formattedDate
